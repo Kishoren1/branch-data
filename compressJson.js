@@ -10,7 +10,7 @@ const inputFilePath = path.join(
 const outputFilePath = path.join(
   __dirname,
   "compressed_data",
-  "combined_data.json.gz"
+  "compressed_data.json.gz"
 );
 
 function compressFile(inputFilePath, outputFilePath) {
