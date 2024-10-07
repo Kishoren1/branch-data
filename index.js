@@ -1,52 +1,40 @@
-const fs = require("fs");
+const fs = require("fs").promises;
 const path = require("path");
 
 const dataFolder = path.join(__dirname, "data");
 const outputFolder = path.join(__dirname, "updated_data");
 
-if (!fs.existsSync(outputFolder)) {
-  fs.mkdirSync(outputFolder);
-}
+(async () => {
+  try {
+    await fs.mkdir(outputFolder, { recursive: true });
 
-let combinedData = [];
+    const files = await fs.readdir(dataFolder);
+    let combinedData = [];
 
-fs.readdir(dataFolder, (err, files) => {
-  if (err) {
-    console.error("Error reading directory:", err);
-    return;
-  }
+    const jsonFiles = files.filter((file) => file.endsWith(".json"));
 
-  let fileReadCount = 0;
-
-  files.forEach((file) => {
-    if (file.endsWith(".json")) {
-      const filePath = path.join(dataFolder, file);
-      fs.readFile(filePath, "utf-8", (err, data) => {
-        if (err) {
-          console.error("Error reading file:", err);
-          return;
-        }
-
+    await Promise.all(
+      jsonFiles.map(async (file) => {
+        const filePath = path.join(dataFolder, file);
+        const data = await fs.readFile(filePath, "utf-8");
         try {
-          const jsonObject = JSON.parse(data);
-          const jsonArray = Object.values(jsonObject);
-          combinedData = combinedData.concat(jsonArray);
-        } catch (parseErr) {
-          console.error("Error parsing JSON:", parseErr);
+          const jsonData = JSON.parse(data);
+          combinedData = combinedData.concat(jsonData);
+        } catch (err) {
+          console.error(`Error parsing JSON in file ${file}:`, err);
         }
+      })
+    );
 
-        fileReadCount++;
-        if (fileReadCount === files.length) {
-          const outputFilePath = path.join(outputFolder, "combined_data.json");
-          fs.writeFile(outputFilePath, JSON.stringify(combinedData), (err) => {
-            if (err) {
-              console.error("Error writing combined file:", err);
-              return;
-            }
-            console.log(`Combined data written to ${outputFilePath}`);
-          });
-        }
-      });
-    }
-  });
-});
+    const outputFilePath = path.join(outputFolder, "combined_data.json");
+    await fs.writeFile(
+      outputFilePath,
+      JSON.stringify(combinedData, null, 2),
+      "utf-8"
+    );
+
+    console.log(`Combined data successfully written to ${outputFilePath}`);
+  } catch (err) {
+    console.error("Error processing files:", err);
+  }
+})();
