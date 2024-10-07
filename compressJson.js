@@ -7,24 +7,20 @@ const inputFilePath = path.join(
   "updated_data",
   "combined_data.json"
 );
-
 const outputFilePath = path.join(
   __dirname,
   "compressed_data",
-  "updated_data.json.gz"
+  "combined_data.json.gz"
 );
 
 function compressFile(inputFilePath, outputFilePath) {
   const inputData = fs.readFileSync(inputFilePath);
 
-  const compressedData = zlib.deflateSync(inputData, {
-    level: 9,
-    flush: zlib.Z_FINISH,
-  });
+  const compressedData = zlib.gzipSync(inputData);
 
   fs.writeFileSync(outputFilePath, compressedData);
 
-  console.log(`Compressed ${inputFilePath} to ${outputFilePath}`);
+  console.log(`Successfully compressed ${inputFilePath} to ${outputFilePath}`);
 }
 
 const outputDir = path.dirname(outputFilePath);

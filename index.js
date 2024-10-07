@@ -19,7 +19,12 @@ const outputFolder = path.join(__dirname, "updated_data");
         const data = await fs.readFile(filePath, "utf-8");
         try {
           const jsonData = JSON.parse(data);
-          combinedData = combinedData.concat(jsonData);
+
+          if (Array.isArray(jsonData)) {
+            combinedData = combinedData.concat(jsonData);
+          } else {
+            combinedData = combinedData.concat(Object.values(jsonData));
+          }
         } catch (err) {
           console.error(`Error parsing JSON in file ${file}:`, err);
         }
