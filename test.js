@@ -5,7 +5,7 @@ const zlib = require("zlib");
 const filePath = path.join(
   __dirname,
   "compressed_data",
-  "combined_data.json.gz"
+  "compressed_data.json.gz"
 );
 
 async function decompressGzip(filePath) {
