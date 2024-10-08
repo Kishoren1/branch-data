@@ -1,73 +1,75 @@
 const fs = require("fs").promises;
 const path = require("path");
+const zlib = require("zlib");
 
-const dataFolder = path.join(__dirname, "updated_data");
+const filePath = path.join(
+  __dirname,
+  "compressed_data",
+  "combined_data.json.gz"
+);
 
-const searchBranchData = async (searchType, searchValue) => {
-  try {
-    const files = await fs.readdir(dataFolder);
-
-    let searchResults = [];
-
-    for (const file of files) {
-      const filePath = path.join(dataFolder, file);
-
-      const fileContent = await fs.readFile(filePath, "utf-8");
-      const jsonData = JSON.parse(fileContent);
-
-      const filteredData = jsonData.filter((entry) => {
-        return (
-          entry[searchType] &&
-          entry[searchType].toString().toUpperCase() ===
-            searchValue.toUpperCase()
-        );
-      });
-
-      searchResults = searchResults.concat(filteredData);
-    }
-
-    return searchResults.length > 0
-      ? searchResults
-      : `No results found for ${searchType}: ${searchValue}`;
-  } catch (err) {
-    console.error(`Error searching for ${searchType}:`, err);
-    return null;
-  }
-};
+async function decompressGzip(filePath) {
+  const compressedData = await fs.readFile(filePath);
+  return new Promise((resolve, reject) => {
+    zlib.gunzip(compressedData, (err, buffer) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(buffer.toString("utf-8"));
+    });
+  });
+}
 
 (async () => {
   try {
-    // const searchTypeIFSC = "IFSC";
-    // const searchValueIFSC = "UTIB0001077";
-    // const resultIFSC = await searchBranchData(searchTypeIFSC, searchValueIFSC);
-    // console.log(`Results for IFSC (${searchValueIFSC}):`, resultIFSC);
+    const decompressedData = await decompressGzip(filePath);
 
-    // const searchTypeMICR = "MICR";
-    // const searchValueMICR = "400065001";
-    // const resultMICR = await searchBranchData(searchTypeMICR, searchValueMICR);
-    // console.log(`Results for MICR (${searchValueMICR}):`, resultMICR);
+    const branchData = JSON.parse(decompressedData);
 
-    // const searchTypeState = "STATE";
-    // const searchValueState = "MAHARASHTRA";
-    // const resultState = await searchBranchData(
-    //   searchTypeState,
-    //   searchValueState
-    // );
-    // console.log(`Results for STATE (${searchValueState}):`, resultState);
+    const searchByIFSC = (ifscCode) => {
+      return branchData.find((branch) => branch.IFSC === ifscCode);
+    };
 
-    // const searchTypeCity = "CITY";
-    // const searchValueCity = "MUMBAI";
-    // const resultCity = await searchBranchData(searchTypeCity, searchValueCity);
-    // console.log(`Results for CITY (${searchValueCity}):`, resultCity);
+    const searchByMICR = (micrCode) => {
+      return branchData.filter((branch) => branch.MICR === micrCode);
+    };
 
-    const searchTypeBranch = "BRANCH";
-    const searchValueBranch = "Abhyudaya Co-operative Bank IMPS";
-    const resultBranch = await searchBranchData(
-      searchTypeBranch,
-      searchValueBranch
-    );
-    console.log(`Results for BRANCH (${searchValueBranch}):`, resultBranch);
-  } catch (error) {
-    console.error("Error during testing:", error);
+    const searchByState = (stateName) => {
+      return branchData.filter(
+        (branch) =>
+          branch.STATE && branch.STATE.toLowerCase() === stateName.toLowerCase()
+      );
+    };
+
+    const searchByCity = (cityName) => {
+      return branchData.filter(
+        (branch) =>
+          branch.CITY && branch.CITY.toLowerCase() === cityName.toLowerCase()
+      );
+    };
+
+    const searchByBranch = (branchName) => {
+      return branchData.filter((branch) => {
+        return (
+          branch.BRANCH &&
+          branch.BRANCH.toLowerCase().includes(branchName.toLowerCase())
+        );
+      });
+    };
+
+    // Test search functions
+    const ifscResult = searchByIFSC("ABNA0000001");
+    const micrResults = searchByMICR("400098012");
+    const stateResults = searchByState("KARNATAKA");
+    const cityResults = searchByCity("MUMBAI");
+    const branchResults = searchByBranch("RTGS-HO");
+
+    // console.log("IFSC Search Result:", ifscResult);
+    console.log("MICR Search Results:", micrResults);
+    // console.log("State Search Results:", stateResults);
+    // console.log("City Search Results:", cityResults);
+    // console.log("Branch Search Results:", branchResults);
+  } catch (err) {
+    console.error("Error reading or processing data:", err);
   }
 })();

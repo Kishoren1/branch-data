@@ -4,4 +4,5 @@ node_modules/
 # Ignore data folder
 data/
 
-
+# Ignore updated_data folder
+updated_data
